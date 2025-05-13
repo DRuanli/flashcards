@@ -19,23 +19,28 @@ $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
-// Get user statistics
+// Get user statistics in one efficient query
 $stmt = $conn->prepare("
     SELECT 
-        COUNT(DISTINCT deck_id) as total_decks,
-        SUM(cards_studied) as total_cards_studied,
-        SUM(correct_answers) as total_correct,
-        ROUND(SUM(correct_answers) / SUM(cards_studied) * 100) as overall_accuracy,
-        MAX(date_studied) as last_study_date
-    FROM statistics
-    WHERE user_id = ?
+        COUNT(DISTINCT d.deck_id) as total_decks,
+        (SELECT COUNT(*) FROM cards c JOIN decks d2 ON c.deck_id = d2.deck_id WHERE d2.user_id = ?) as total_cards,
+        COALESCE(SUM(s.cards_studied), 0) as total_cards_studied,
+        COALESCE(SUM(s.correct_answers), 0) as total_correct,
+        CASE WHEN SUM(s.cards_studied) > 0 
+            THEN ROUND(SUM(s.correct_answers) / SUM(s.cards_studied) * 100) 
+            ELSE 0 
+        END as overall_accuracy,
+        MAX(s.date_studied) as last_study_date
+    FROM decks d
+    LEFT JOIN statistics s ON d.deck_id = s.deck_id AND s.user_id = ?
+    WHERE d.user_id = ?
 ");
-$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->bind_param("iii", $_SESSION['user_id'], $_SESSION['user_id'], $_SESSION['user_id']);
 $stmt->execute();
 $result = $stmt->get_result();
 $stats = $result->fetch_assoc();
 
-// Get streak information
+// Get study dates for streak calculation
 $stmt = $conn->prepare("
     SELECT date_studied
     FROM statistics
@@ -54,14 +59,9 @@ while ($row = $result->fetch_assoc()) {
 
 // Calculate current streak
 $current_streak = 0;
-$yesterday = date('Y-m-d', strtotime('-1 day'));
-
-// Check if user studied today
 $today = date('Y-m-d');
 $studied_today = in_array($today, $study_dates);
-
-// Start from yesterday or today
-$start_date = $studied_today ? $today : $yesterday;
+$start_date = $studied_today ? $today : date('Y-m-d', strtotime('-1 day'));
 
 // Calculate streak
 for ($i = 0; $i < count($study_dates); $i++) {
@@ -73,81 +73,73 @@ for ($i = 0; $i < count($study_dates); $i++) {
     }
 }
 
-// Calculate study achievements
-$achievements = [
-    'first_deck' => [
-        'name' => 'First Deck Created',
-        'description' => 'Created your first flashcard deck',
-        'icon' => 'fa-book',
-        'color' => 'bg-primary',
-        'unlocked' => false
-    ],
-    'first_study' => [
-        'name' => 'First Study Session',
-        'description' => 'Completed your first study session',
-        'icon' => 'fa-graduation-cap',
-        'color' => 'bg-success',
-        'unlocked' => false
-    ],
-    'streak_3' => [
-        'name' => '3-Day Streak',
-        'description' => 'Studied for 3 consecutive days',
-        'icon' => 'fa-fire',
-        'color' => 'bg-warning',
-        'unlocked' => false
-    ],
-    'streak_7' => [
-        'name' => '7-Day Streak',
-        'description' => 'Studied for 7 consecutive days',
-        'icon' => 'fa-fire-alt',
-        'color' => 'bg-warning',
-        'unlocked' => false
-    ],
-    'accuracy_80' => [
-        'name' => '80% Accuracy',
-        'description' => 'Achieved 80% or higher accuracy rate',
-        'icon' => 'fa-bullseye',
-        'color' => 'bg-info',
-        'unlocked' => false
-    ],
-    'cards_100' => [
-        'name' => 'Memory Master',
-        'description' => 'Studied more than 100 cards in total',
-        'icon' => 'fa-brain',
-        'color' => 'bg-danger',
-        'unlocked' => false
-    ]
-];
-
-// Check which achievements are unlocked
-$stmt = $conn->prepare("SELECT COUNT(*) as deck_count FROM decks WHERE user_id = ?");
+// Get study time distribution
+$stmt = $conn->prepare("
+    SELECT 
+        CASE
+            WHEN HOUR(last_reviewed) BETWEEN 5 AND 11 THEN 'morning'
+            WHEN HOUR(last_reviewed) BETWEEN 12 AND 17 THEN 'afternoon'
+            ELSE 'evening'
+        END as time_of_day,
+        COUNT(*) as review_count
+    FROM progress
+    WHERE user_id = ? AND last_reviewed IS NOT NULL
+    GROUP BY time_of_day
+");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $result = $stmt->get_result();
-$deck_count = $result->fetch_assoc()['deck_count'];
 
-if ($deck_count > 0) {
-    $achievements['first_deck']['unlocked'] = true;
+$total_reviews = 0;
+$study_times = [
+    'morning' => 0,
+    'afternoon' => 0,
+    'evening' => 0
+];
+
+while ($row = $result->fetch_assoc()) {
+    $study_times[$row['time_of_day']] = $row['review_count'];
+    $total_reviews += $row['review_count'];
 }
 
-if ($stats['total_cards_studied'] > 0) {
-    $achievements['first_study']['unlocked'] = true;
+// Convert to percentages
+if ($total_reviews > 0) {
+    foreach ($study_times as $time => $count) {
+        $study_times[$time] = round(($count / $total_reviews) * 100);
+    }
 }
 
-if ($current_streak >= 3) {
-    $achievements['streak_3']['unlocked'] = true;
+// Get study count data for heatmap
+$stmt = $conn->prepare("
+    SELECT date_studied, SUM(cards_studied) as count
+    FROM statistics
+    WHERE user_id = ?
+    GROUP BY date_studied
+");
+$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$study_counts = [];
+while ($row = $result->fetch_assoc()) {
+    $study_counts[$row['date_studied']] = $row['count'];
 }
 
-if ($current_streak >= 7) {
-    $achievements['streak_7']['unlocked'] = true;
-}
-
-if ($stats['overall_accuracy'] >= 80) {
-    $achievements['accuracy_80']['unlocked'] = true;
-}
-
-if ($stats['total_cards_studied'] >= 100) {
-    $achievements['cards_100']['unlocked'] = true;
+// Get top decks
+$stmt = $conn->prepare("
+    SELECT d.deck_name, COUNT(s.stat_id) as study_count 
+    FROM statistics s 
+    JOIN decks d ON s.deck_id = d.deck_id 
+    WHERE s.user_id = ? 
+    GROUP BY s.deck_id 
+    ORDER BY study_count DESC 
+    LIMIT 3
+");
+$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$top_decks = [];
+while ($row = $result->fetch_assoc()) {
+    $top_decks[] = $row;
 }
 
 // Handle form submissions
@@ -303,44 +295,14 @@ include_once 'includes/header.php';
                         
                         <div class="detail-item">
                             <span class="detail-label">Total Decks</span>
-                            <span class="detail-value"><?php echo $deck_count; ?></span>
+                            <span class="detail-value"><?php echo $stats['total_decks']; ?></span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <span class="detail-label">Total Cards</span>
+                            <span class="detail-value"><?php echo $stats['total_cards']; ?></span>
                         </div>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Achievements Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Achievements</h5>
-                </div>
-                <div class="card-body p-0">
-                    <ul class="list-group list-group-flush achievement-list">
-                        <?php foreach ($achievements as $achievement): ?>
-                            <li class="list-group-item d-flex align-items-center px-3 py-3 <?php echo $achievement['unlocked'] ? '' : 'achievement-locked'; ?>">
-                                <div class="achievement-icon <?php echo $achievement['color']; ?> me-3">
-                                    <i class="fas <?php echo $achievement['icon']; ?>"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0"><?php echo $achievement['name']; ?></h6>
-                                    <small class="text-muted"><?php echo $achievement['description']; ?></small>
-                                </div>
-                                <?php if ($achievement['unlocked']): ?>
-                                    <div class="ms-auto">
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check"></i>
-                                        </span>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="ms-auto">
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-lock"></i>
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
                 </div>
             </div>
         </div>
@@ -376,11 +338,6 @@ include_once 'includes/header.php';
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab">
                                 <i class="fas fa-envelope me-2"></i>Change Email
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="preferences-tab" data-bs-toggle="tab" data-bs-target="#preferences" type="button" role="tab">
-                                <i class="fas fa-sliders-h me-2"></i>Preferences
                             </button>
                         </li>
                     </ul>
@@ -425,127 +382,64 @@ include_once 'includes/header.php';
                                 </button>
                             </form>
                         </div>
-                        
-                        <!-- Preferences Tab -->
-                        <div class="tab-pane fade" id="preferences" role="tabpanel">
-                            <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
-                                <div class="mb-3">
-                                    <label class="form-label d-block">Theme Preference</label>
-                                    <div class="theme-selector d-flex flex-wrap gap-3">
-                                        <div class="theme-option">
-                                            <input type="radio" name="theme" id="theme-default" value="default" class="theme-radio" checked>
-                                            <label for="theme-default" class="theme-label">
-                                                <div class="theme-preview default-theme"></div>
-                                                <span>Default</span>
-                                            </label>
-                                        </div>
-                                        <div class="theme-option">
-                                            <input type="radio" name="theme" id="theme-dark" value="dark" class="theme-radio">
-                                            <label for="theme-dark" class="theme-label">
-                                                <div class="theme-preview dark-theme"></div>
-                                                <span>Dark</span>
-                                            </label>
-                                        </div>
-                                        <div class="theme-option">
-                                            <input type="radio" name="theme" id="theme-sakura" value="sakura" class="theme-radio">
-                                            <label for="theme-sakura" class="theme-label">
-                                                <div class="theme-preview sakura-theme"></div>
-                                                <span>Sakura</span>
-                                            </label>
-                                        </div>
-                                        <div class="theme-option">
-                                            <input type="radio" name="theme" id="theme-matcha" value="matcha" class="theme-radio">
-                                            <label for="theme-matcha" class="theme-label">
-                                                <div class="theme-preview matcha-theme"></div>
-                                                <span>Matcha</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <small class="form-text text-muted mt-2">Theme functionality will be available in future updates</small>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Daily Study Goal</label>
-                                    <select class="form-select" name="daily_goal">
-                                        <option value="10">10 cards per day</option>
-                                        <option value="20" selected>20 cards per day</option>
-                                        <option value="30">30 cards per day</option>
-                                        <option value="50">50 cards per day</option>
-                                        <option value="100">100 cards per day</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-4">
-                                    <label class="form-label">Email Notifications</label>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="notify_due_cards" name="notify_due_cards" checked>
-                                        <label class="form-check-label" for="notify_due_cards">
-                                            Send me reminders about due cards
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="notify_streak" name="notify_streak" checked>
-                                        <label class="form-check-label" for="notify_streak">
-                                            Send me alerts when my streak is at risk
-                                        </label>
-                                    </div>
-                                    <small class="form-text text-muted">Notification functionality will be available in future updates</small>
-                                </div>
-                                
-                                <button type="submit" name="save_preferences" class="btn btn-primary" disabled>
-                                    <i class="fas fa-save me-2"></i>Save Preferences
-                                </button>
-                                <small class="text-muted ms-3">Coming soon in a future update</small>
-                            </form>
-                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Activity Overview -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Activity Overview</h5>
-                    <a href="<?php echo SITE_URL; ?>/stats.php" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-chart-bar me-1"></i>Detailed Stats
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="activity-calendar mb-4">
-                        <h6 class="mb-3">Study Heatmap</h6>
-                        <div id="study-heatmap" class="heatmap-container">
-                            <!-- Calendar heatmap will be generated here -->
+            <div class="row">
+                <!-- Study Calendar -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Study Calendar</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="study-calendar"></div>
                         </div>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="activity-overview-box p-3">
-                                <h6 class="mb-3">Top Decks</h6>
-                                <?php
-                                $conn = connectDB();
-                                $stmt = $conn->prepare("
-                                    SELECT d.deck_name, COUNT(s.stat_id) as study_count 
-                                    FROM statistics s 
-                                    JOIN decks d ON s.deck_id = d.deck_id 
-                                    WHERE s.user_id = ? 
-                                    GROUP BY s.deck_id 
-                                    ORDER BY study_count DESC 
-                                    LIMIT 3
-                                ");
-                                $stmt->bind_param("i", $_SESSION['user_id']);
-                                $stmt->execute();
-                                $result = $stmt->get_result();
-                                $top_decks = [];
-                                while ($row = $result->fetch_assoc()) {
-                                    $top_decks[] = $row;
-                                }
-                                $conn->close();
+                </div>
+                
+                <!-- Study Insights -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Study Insights</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Study Time Distribution -->
+                            <h6 class="mb-3">Study Time Distribution</h6>
+                            <div class="study-time-chart mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small>Morning</small>
+                                    <small><?php echo $study_times['morning']; ?>%</small>
+                                </div>
+                                <div class="progress mb-3" style="height: 10px;">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: <?php echo $study_times['morning']; ?>%"></div>
+                                </div>
                                 
-                                if (empty($top_decks)) {
-                                    echo '<p class="text-muted">No study data available yet</p>';
-                                } else {
-                                ?>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small>Afternoon</small>
+                                    <small><?php echo $study_times['afternoon']; ?>%</small>
+                                </div>
+                                <div class="progress mb-3" style="height: 10px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo $study_times['afternoon']; ?>%"></div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small>Evening</small>
+                                    <small><?php echo $study_times['evening']; ?>%</small>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar bg-indigo" role="progressbar" style="width: <?php echo $study_times['evening']; ?>%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Top Decks -->
+                            <h6 class="mb-3 mt-4">Top Decks</h6>
+                            <?php if (empty($top_decks)): ?>
+                                <p class="text-muted">No study data available yet</p>
+                            <?php else: ?>
                                 <ul class="list-group list-group-flush">
                                     <?php foreach ($top_decks as $index => $deck): ?>
                                         <li class="list-group-item px-0 py-2 border-0">
@@ -561,47 +455,7 @@ include_once 'includes/header.php';
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>
-                                <?php } ?>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="activity-overview-box p-3">
-                                <h6 class="mb-3">Study Time</h6>
-                                <?php
-                                // This would normally come from the database
-                                // Just showing placeholder data for now
-                                $study_times = [
-                                    'morning' => 35,
-                                    'afternoon' => 45,
-                                    'evening' => 20
-                                ];
-                                ?>
-                                <div class="study-time-chart">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <small>Morning</small>
-                                        <small><?php echo $study_times['morning']; ?>%</small>
-                                    </div>
-                                    <div class="progress mb-3" style="height: 10px;">
-                                        <div class="progress-bar bg-info" role="progressbar" style="width: <?php echo $study_times['morning']; ?>%"></div>
-                                    </div>
-                                    
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <small>Afternoon</small>
-                                        <small><?php echo $study_times['afternoon']; ?>%</small>
-                                    </div>
-                                    <div class="progress mb-3" style="height: 10px;">
-                                        <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo $study_times['afternoon']; ?>%"></div>
-                                    </div>
-                                    
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <small>Evening</small>
-                                        <small><?php echo $study_times['evening']; ?>%</small>
-                                    </div>
-                                    <div class="progress" style="height: 10px;">
-                                        <div class="progress-bar bg-indigo" role="progressbar" style="width: <?php echo $study_times['evening']; ?>%"></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -689,21 +543,6 @@ include_once 'includes/header.php';
         font-weight: 500;
     }
     
-    /* Achievement List */
-    .achievement-list .achievement-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-    }
-    
-    .achievement-locked {
-        opacity: 0.5;
-    }
-    
     /* Tab Styling */
     .nav-tabs .nav-link {
         padding: 0.75rem 1.25rem;
@@ -737,54 +576,6 @@ include_once 'includes/header.php';
         font-weight: 600;
     }
     
-    /* Theme Selector */
-    .theme-selector {
-        display: flex;
-    }
-    
-    .theme-option {
-        text-align: center;
-    }
-    
-    .theme-radio {
-        display: none;
-    }
-    
-    .theme-label {
-        cursor: pointer;
-    }
-    
-    .theme-preview {
-        width: 100px;
-        height: 60px;
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
-        transition: all 0.2s ease;
-        border: 2px solid transparent;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .theme-radio:checked + .theme-label .theme-preview {
-        border-color: var(--indigo);
-        box-shadow: 0 2px 10px rgba(62, 74, 137, 0.3);
-    }
-    
-    .default-theme {
-        background: linear-gradient(135deg, #3E4A89 0%, #FFFFFF 100%);
-    }
-    
-    .dark-theme {
-        background: linear-gradient(135deg, #222222 0%, #444444 100%);
-    }
-    
-    .sakura-theme {
-        background: linear-gradient(135deg, #FFB7C5 0%, #FFFFFF 100%);
-    }
-    
-    .matcha-theme {
-        background: linear-gradient(135deg, #8AA367 0%, #FFFFFF 100%);
-    }
-    
     /* Heatmap Container */
     .heatmap-container {
         min-height: 200px;
@@ -796,35 +587,63 @@ include_once 'includes/header.php';
         gap: 3px;
     }
     
-    .heatmap-cell {
-        width: 15px;
-        height: 15px;
-        border-radius: 2px;
-        background-color: #eee;
+    /* Calendar Styles */
+    .calendar-day {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        font-size: 0.9rem;
+        margin: 0 auto;
+        transition: all 0.2s ease;
     }
     
-    .heatmap-cell-level-1 {
+    .calendar-day.today {
+        background-color: var(--indigo);
+        color: white;
+    }
+    
+    .calendar-day.studied-1:not(.today) {
         background-color: #d6e9c6;
+        color: var(--kuro);
     }
     
-    .heatmap-cell-level-2 {
+    .calendar-day.studied-2:not(.today) {
         background-color: #A4C86A;
+        color: var(--kuro);
     }
     
-    .heatmap-cell-level-3 {
+    .calendar-day.studied-3:not(.today) {
         background-color: #8AA367;
+        color: white;
     }
     
-    .heatmap-cell-level-4 {
+    .calendar-day.studied-4:not(.today) {
         background-color: #537A32;
+        color: white;
+    }
+    
+    .calendar-day.today.studied {
+        background: linear-gradient(135deg, var(--indigo) 50%, var(--matcha) 50%);
+        color: white;
+    }
+    
+    .heatmap-month-label {
+        flex: 1;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #777;
     }
 </style>
 
-<!-- JavaScript for Profile Page -->
+<!-- JavaScript for Calendar -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Generate heatmap
-    generateHeatmap();
+    // Generate calendar
+    renderCalendar();
     
     // Initialize tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -833,10 +652,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function generateHeatmap() {
-    // Generate last 90 days for the heatmap
-    const heatmapContainer = document.getElementById('study-heatmap');
-    if (!heatmapContainer) return;
+function renderCalendar() {
+    const calendarEl = document.getElementById('study-calendar');
+    if (!calendarEl) return;
+    
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
     
     // Get study dates from PHP
     const studyDates = [
@@ -847,47 +669,107 @@ function generateHeatmap() {
         ?>
     ];
     
-    // Generate cells for last 90 days
-    const days = 90;
-    let heatmapHtml = '';
+    // Get study counts for intensity
+    const studyCounts = {
+        <?php 
+            foreach ($study_counts as $date => $count) {
+                echo "'$date': $count,";
+            }
+        ?>
+    };
     
-    // Add labels for months
-    let lastMonth = -1;
-    heatmapHtml += '<div class="heatmap-months d-flex w-100 mb-2">';
-    for (let i = days; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        
-        const month = date.getMonth();
-        if (month !== lastMonth) {
-            lastMonth = month;
-            const monthName = date.toLocaleString('default', { month: 'short' });
-            heatmapHtml += `<div class="heatmap-month-label">${monthName}</div>`;
-        }
-    }
-    heatmapHtml += '</div>';
-    
-    // Add day cells
-    for (let i = days; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        
-        const dateString = date.toISOString().split('T')[0];
-        
-        // Check if user studied on this day
-        const studyCount = studyDates.includes(dateString) ? Math.floor(Math.random() * 4) + 1 : 0;
-        
-        let cellClass = 'heatmap-cell';
-        if (studyCount > 0) {
-            cellClass += ` heatmap-cell-level-${studyCount}`;
-        }
-        
-        const formattedDate = date.toLocaleDateString();
-        
-        heatmapHtml += `<div class="${cellClass}" title="${formattedDate}" data-bs-toggle="tooltip"></div>`;
+    // Function to calculate intensity level (1-4) based on count
+    function calculateIntensity(count) {
+        if (count <= 5) return 1;
+        if (count <= 15) return 2;
+        if (count <= 30) return 3;
+        return 4;
     }
     
-    heatmapContainer.innerHTML = heatmapHtml;
+    // Create month and year header
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const header = document.createElement('h6');
+    header.className = 'text-center mb-3';
+    header.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    calendarEl.appendChild(header);
+    
+    // Create day labels
+    const dayLabels = document.createElement('div');
+    dayLabels.className = 'row text-center mb-2';
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    
+    days.forEach(day => {
+        const dayEl = document.createElement('div');
+        dayEl.className = 'col px-1';
+        dayEl.textContent = day;
+        dayEl.style.fontSize = '0.8rem';
+        dayEl.style.fontWeight = '500';
+        dayLabels.appendChild(dayEl);
+    });
+    
+    calendarEl.appendChild(dayLabels);
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // Create calendar days
+    let dayCount = 1;
+    let calendarHtml = '';
+    
+    // Create rows for the month
+    for (let i = 0; i < 6; i++) {
+        calendarHtml += '<div class="row mb-2">';
+        
+        // Create 7 columns (days of week)
+        for (let j = 0; j < 7; j++) {
+            // Add empty cells for days before start of month
+            if (i === 0 && j < firstDay) {
+                calendarHtml += '<div class="col px-1"></div>';
+            } 
+            // Add days of month
+            else if (dayCount <= daysInMonth) {
+                const date = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${dayCount.toString().padStart(2, '0')}`;
+                const isStudyDay = studyDates.includes(date);
+                const isToday = dayCount === currentDate.getDate() && currentMonth === currentDate.getMonth() && currentYear === currentDate.getFullYear();
+                
+                // Calculate intensity level (1-4) based on actual study count
+                const studyIntensity = isStudyDay ? calculateIntensity(studyCounts[date] || 0) : 0;
+                
+                let dayHtml;
+                let intensityClass = studyIntensity > 0 ? ` studied-${studyIntensity}` : '';
+                
+                if (isStudyDay && isToday) {
+                    dayHtml = `<div class="calendar-day today studied${intensityClass}">${dayCount}</div>`;
+                } else if (isStudyDay) {
+                    dayHtml = `<div class="calendar-day studied${intensityClass}">${dayCount}</div>`;
+                } else if (isToday) {
+                    dayHtml = `<div class="calendar-day today">${dayCount}</div>`;
+                } else {
+                    dayHtml = `<div class="calendar-day">${dayCount}</div>`;
+                }
+                
+                const studyCountText = studyCounts[date] ? ` - ${studyCounts[date]} cards` : '';
+                calendarHtml += `<div class="col px-1 text-center" title="${date}${studyCountText}" data-bs-toggle="tooltip">${dayHtml}</div>`;
+                dayCount++;
+            } 
+            // Add empty cells for days after end of month
+            else {
+                calendarHtml += '<div class="col px-1"></div>';
+            }
+        }
+        
+        calendarHtml += '</div>';
+        
+        // Stop if we've reached the end of the month
+        if (dayCount > daysInMonth) {
+            break;
+        }
+    }
+    
+    const calendarDays = document.createElement('div');
+    calendarDays.innerHTML = calendarHtml;
+    calendarEl.appendChild(calendarDays);
 }
 </script>
 

@@ -30,6 +30,54 @@ function connectDB() {
     return $conn;
 }
 
+// Function to check for "Remember Me" cookie and auto-login
+function checkRememberMe() {
+    if (isset($_COOKIE['remember_me']) && !isLoggedIn()) {
+        list($selector, $validator) = explode(':', $_COOKIE['remember_me']);
+        
+        $conn = connectDB();
+        $stmt = $conn->prepare("SELECT t.user_id, t.token, u.username 
+                               FROM auth_tokens t 
+                               JOIN users u ON t.user_id = u.user_id 
+                               WHERE t.selector = ? AND t.expires > NOW()");
+        $stmt->bind_param("s", $selector);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 1) {
+            $row = $result->fetch_assoc();
+            
+            if (hash_equals($row['token'], hash('sha256', $validator))) {
+                // Valid token, log the user in
+                $_SESSION['user_id'] = $row['user_id'];
+                $_SESSION['username'] = $row['username'];
+                
+                // Extend the cookie and database token
+                $expires = time() + 60 * 60 * 24 * 30; // 30 days
+                $newValidator = bin2hex(random_bytes(32));
+                
+                $stmt = $conn->prepare("UPDATE auth_tokens SET token = ?, expires = ? WHERE selector = ?");
+                $stmt->bind_param("sss", hash('sha256', $newValidator), date('Y-m-d H:i:s', $expires), $selector);
+                $stmt->execute();
+                
+                // Update cookie
+                setcookie(
+                    'remember_me',
+                    $selector . ':' . $newValidator,
+                    $expires,
+                    '/',
+                    '',
+                    true, // secure
+                    true  // httponly
+                );
+            }
+        }
+        
+        $stmt->close();
+        $conn->close();
+    }
+}
+
 // Function to check if user is logged in
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
