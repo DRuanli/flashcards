@@ -7,7 +7,10 @@ define('DB_NAME', 'flashcards');
 
 // Site configuration
 define('SITE_NAME', 'FlashLearn');
-define('SITE_URL', 'http://localhost:81/flashcards'); // Replace with your website URL
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+$host = $_SERVER['HTTP_HOST'];
+$path = dirname($_SERVER['SCRIPT_NAME']);
+define('SITE_URL', $protocol . $host . $path);
 
 // Session configuration
 session_start();

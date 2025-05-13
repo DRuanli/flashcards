@@ -38,7 +38,7 @@ $stmt->close();
 $conn->close();
 
 // Include header
-include_once '../includes/header.php';
+include_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -96,4 +96,4 @@ include_once '../includes/header.php';
     </div>
 <?php endif; ?>
 
-<?php include_once '../includes/footer.php'; ?>
+<?php include_once dirname(__DIR__) . '/includes/footer.php'; ?>

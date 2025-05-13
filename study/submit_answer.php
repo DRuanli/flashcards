@@ -255,7 +255,7 @@ while ($row = $result->fetch_assoc()) {
 $conn->close();
 
 // Include header
-include_once 'includes/header.php';
+include_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
 <h1 class="mb-4">Your Progress</h1>
@@ -577,4 +577,4 @@ function renderCalendar(studyDates) {
 <?php endif; ?>
 </script>
 
-<?php include_once 'includes/footer.php'; ?>
+include_once dirname(__DIR__) . '/includes/footer.php';

@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Include header
-include_once '../includes/header.php';
+include_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
 <div class="row justify-content-center">
@@ -81,4 +81,4 @@ include_once '../includes/header.php';
     </div>
 </div>
 
-<?php include_once '../includes/footer.php'; ?>
+<?php include_once dirname(__DIR__) . '/includes/footer.php'; ?>

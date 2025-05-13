@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $conn->close();
 
 // Include header
-include_once '../includes/header.php';
+include_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
 <nav aria-label="breadcrumb" class="mb-4">
@@ -170,4 +170,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include_once '../includes/footer.php'; ?>
+<?php include_once dirname(__DIR__) . '/includes/footer.php'; ?>

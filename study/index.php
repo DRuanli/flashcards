@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function submitAnswer(cardId, rating) {
             // Create AJAX request
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${window.location.origin}/flashcards/study/submit_answer.php`, true);
+            xhr.open('POST', '<?php echo SITE_URL; ?>/study/submit_answer.php', true);
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             
             // Prepare data
@@ -350,4 +350,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include_once '../includes/footer.php'; ?>
+<?php include_once dirname(__DIR__) . '/includes/footer.php'; ?>
