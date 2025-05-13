@@ -14,6 +14,7 @@ require_once dirname(__DIR__) . '/config.php';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Shippori+Mincho:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
         :root {
             --indigo: #3E4A89;
@@ -39,6 +40,10 @@ require_once dirname(__DIR__) . '/config.php';
         h1, h2, h3, h4, h5, h6, .navbar-brand {
             font-family: 'Shippori Mincho', serif;
             font-weight: 600;
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-dark) 100%);
         }
         
         .navbar {
@@ -454,6 +459,50 @@ require_once dirname(__DIR__) . '/config.php';
             border-radius: 10px;
             background-color: var(--indigo);
         }
+        
+        /* User Profile Dropdown */
+        .user-dropdown .dropdown-toggle::after {
+            display: none;
+        }
+        
+        .user-dropdown .dropdown-toggle {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-weight: 600;
+        }
+        
+        .user-dropdown .dropdown-menu {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0;
+        }
+        
+        .user-dropdown .dropdown-item {
+            padding: 0.6rem 1.2rem;
+            transition: all 0.2s ease;
+        }
+        
+        .user-dropdown .dropdown-item:hover {
+            background-color: rgba(62, 74, 137, 0.1);
+        }
+        
+        .user-dropdown .dropdown-item i {
+            width: 20px;
+            margin-right: 8px;
+            color: var(--indigo);
+        }
     </style>
 </head>
 <body>
@@ -502,10 +551,31 @@ require_once dirname(__DIR__) . '/config.php';
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <?php if (isLoggedIn()): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php echo SITE_URL; ?>/auth/logout.php">
-                                <i class="fas fa-sign-out-alt"></i> Logout
+                        <li class="nav-item dropdown user-dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar">
+                                    <?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?>
+                                </div>
+                                <span class="d-none d-md-inline"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                             </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="<?php echo SITE_URL; ?>/profile.php">
+                                        <i class="fas fa-user"></i> Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="<?php echo SITE_URL; ?>/stats.php">
+                                        <i class="fas fa-chart-line"></i> My Stats
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="<?php echo SITE_URL; ?>/auth/logout.php">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     <?php else: ?>
                         <li class="nav-item">
