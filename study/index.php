@@ -700,10 +700,11 @@ include_once '../includes/header.php';
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Only run if we have cards to study
-    if (document.getElementById('study-container')) {
+    const studyContainer = document.getElementById('study-container');
+    if (studyContainer) {
         // Get cards data from data attribute
-        const cardsData = JSON.parse(document.getElementById('study-container').dataset.cards);
-        const studyMode = document.getElementById('study-container').dataset.mode;
+        const cardsData = JSON.parse(studyContainer.dataset.cards);
+        const studyMode = studyContainer.dataset.mode;
         let currentCardIndex = 0;
         let totalCards = cardsData.length;
         let cardsStudied = 0;
@@ -728,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let enableTypingMode = false;
         let enableFocusMode = false;
         
-        // Get DOM elements
+        // Get DOM elements safely with existence checks
         const cardFront = document.getElementById('card-front');
         const cardBack = document.getElementById('card-back');
         const currentCard = document.getElementById('current-card');
@@ -760,163 +761,225 @@ document.addEventListener('DOMContentLoaded', function() {
         const statAccuracy = document.getElementById('stat-accuracy');
         const statTime = document.getElementById('stat-time');
         
+        // Safe event binding function
+        function bindEvent(element, eventType, handler) {
+            if (element) {
+                element.addEventListener(eventType, handler);
+            }
+        }
+        
         // Study option toggles
-        document.getElementById('enable-hints').addEventListener('change', function() {
-            enableHints = this.checked;
-            updateHintButton();
-        });
+        const hintsToggle = document.getElementById('enable-hints');
+        if (hintsToggle) {
+            bindEvent(hintsToggle, 'change', function() {
+                enableHints = this.checked;
+                updateHintButton();
+            });
+        }
         
-        document.getElementById('enable-self-assessment').addEventListener('change', function() {
-            enableSelfAssessment = this.checked;
-            // Toggle visibility of self assessment controls
-            if (enableSelfAssessment) {
-                selfAssessment.classList.remove('d-none');
-            } else {
-                selfAssessment.classList.add('d-none');
-            }
-        });
-        
-        document.getElementById('enable-typing-mode').addEventListener('change', function() {
-            enableTypingMode = this.checked;
-            // Toggle visibility of typing mode controls
-            if (enableTypingMode) {
-                typingMode.classList.remove('d-none');
-            } else {
-                typingMode.classList.add('d-none');
-            }
-        });
-        
-        document.getElementById('enable-focus-mode').addEventListener('change', function() {
-            enableFocusMode = this.checked;
-            // Toggle focus mode
-            if (enableFocusMode) {
-                document.body.classList.add('focus-mode');
-            } else {
-                document.body.classList.remove('focus-mode');
-            }
-        });
-        
-        // Start the study session
-        startButton.addEventListener('click', function() {
-            startControls.classList.add('d-none');
-            
-            // Initialize study options based on toggles
-            enableHints = document.getElementById('enable-hints').checked;
-            enableSelfAssessment = document.getElementById('enable-self-assessment').checked;
-            enableTypingMode = document.getElementById('enable-typing-mode').checked;
-            enableFocusMode = document.getElementById('enable-focus-mode').checked;
-            
-            if (enableFocusMode) {
-                document.body.classList.add('focus-mode');
-            }
-            
-            if (enableHints) {
-                hintButton.classList.remove('d-none');
-            }
-            
-            markReviewButton.classList.remove('d-none');
-            
-            showNextCard();
-            updateStats();
-            
-            // Start session timer
-            sessionStartTime = Date.now();
-            timerInterval = setInterval(updateTimer, 1000);
-        });
-        
-        // Flip card when clicked
-        currentCard.addEventListener('click', function() {
-            if (!currentCard.classList.contains('flipped') && !currentCard.classList.contains('d-none')) {
-                flipCard();
-            }
-        });
-        
-        // Handle hint button
-        hintButton.addEventListener('click', function() {
-            // Generate hint by showing the first letter and then dashes for remaining letters
-            const answer = cardsData[currentCardIndex].answer;
-            const words = answer.split(' ');
-            let hint = '';
-            
-            words.forEach(word => {
-                if (word.length > 0) {
-                    hint += word[0];
-                    for (let i = 1; i < word.length; i++) {
-                        hint += '–';
+        const selfAssessmentToggle = document.getElementById('enable-self-assessment');
+        if (selfAssessmentToggle) {
+            bindEvent(selfAssessmentToggle, 'change', function() {
+                enableSelfAssessment = this.checked;
+                // Toggle visibility of self assessment controls
+                if (selfAssessment) {
+                    if (enableSelfAssessment) {
+                        selfAssessment.classList.remove('d-none');
+                    } else {
+                        selfAssessment.classList.add('d-none');
                     }
-                    hint += ' ';
                 }
             });
-            
-            // Show hint in a small tooltip near the button
-            this.setAttribute('data-bs-toggle', 'tooltip');
-            this.setAttribute('data-bs-placement', 'top');
-            this.setAttribute('title', hint);
-            
-            // Initialize tooltip
-            new bootstrap.Tooltip(this).show();
-            
-            // Hide tooltip after a few seconds
-            setTimeout(() => {
-                bootstrap.Tooltip.getInstance(this).hide();
-            }, 3000);
-        });
+        }
+        
+        const typingModeToggle = document.getElementById('enable-typing-mode');
+        if (typingModeToggle) {
+            bindEvent(typingModeToggle, 'change', function() {
+                enableTypingMode = this.checked;
+                // Toggle visibility of typing mode controls
+                if (typingMode) {
+                    if (enableTypingMode) {
+                        typingMode.classList.remove('d-none');
+                    } else {
+                        typingMode.classList.add('d-none');
+                    }
+                }
+            });
+        }
+        
+        const focusModeToggle = document.getElementById('enable-focus-mode');
+        if (focusModeToggle) {
+            bindEvent(focusModeToggle, 'change', function() {
+                enableFocusMode = this.checked;
+                // Toggle focus mode
+                if (enableFocusMode) {
+                    document.body.classList.add('focus-mode');
+                } else {
+                    document.body.classList.remove('focus-mode');
+                }
+            });
+        }
+        
+        // Start the study session
+        if (startButton) {
+            bindEvent(startButton, 'click', function() {
+                if (startControls) {
+                    startControls.classList.add('d-none');
+                }
+                
+                // Initialize study options based on toggles
+                const hintsEl = document.getElementById('enable-hints');
+                const selfAssessmentEl = document.getElementById('enable-self-assessment');
+                const typingModeEl = document.getElementById('enable-typing-mode');
+                const focusModeEl = document.getElementById('enable-focus-mode');
+                
+                enableHints = hintsEl ? hintsEl.checked : true;
+                enableSelfAssessment = selfAssessmentEl ? selfAssessmentEl.checked : false;
+                enableTypingMode = typingModeEl ? typingModeEl.checked : false;
+                enableFocusMode = focusModeEl ? focusModeEl.checked : false;
+                
+                if (enableFocusMode) {
+                    document.body.classList.add('focus-mode');
+                }
+                
+                if (enableHints && hintButton) {
+                    hintButton.classList.remove('d-none');
+                }
+                
+                if (markReviewButton) {
+                    markReviewButton.classList.remove('d-none');
+                }
+                
+                showNextCard();
+                updateStats();
+                
+                // Start session timer
+                sessionStartTime = Date.now();
+                timerInterval = setInterval(updateTimer, 1000);
+            });
+        }
+        
+        // Flip card when clicked
+        if (currentCard) {
+            bindEvent(currentCard, 'click', function() {
+                if (!currentCard.classList.contains('flipped') && !currentCard.classList.contains('d-none')) {
+                    flipCard();
+                }
+            });
+        }
+        
+        // Handle hint button
+        if (hintButton) {
+            bindEvent(hintButton, 'click', function() {
+                if (!cardsData || currentCardIndex >= cardsData.length) {
+                    return;
+                }
+                
+                // Generate hint by showing the first letter and then dashes for remaining letters
+                const answer = cardsData[currentCardIndex].answer;
+                const words = answer.split(' ');
+                let hint = '';
+                
+                words.forEach(word => {
+                    if (word.length > 0) {
+                        hint += word[0];
+                        for (let i = 1; i < word.length; i++) {
+                            hint += '–';
+                        }
+                        hint += ' ';
+                    }
+                });
+                
+                // Show hint in a small tooltip near the button
+                this.setAttribute('data-bs-toggle', 'tooltip');
+                this.setAttribute('data-bs-placement', 'top');
+                this.setAttribute('title', hint);
+                
+                // Initialize tooltip
+                try {
+                    new bootstrap.Tooltip(this).show();
+                    
+                    // Hide tooltip after a few seconds
+                    setTimeout(() => {
+                        const tooltipInstance = bootstrap.Tooltip.getInstance(this);
+                        if (tooltipInstance) {
+                            tooltipInstance.hide();
+                        }
+                    }, 3000);
+                } catch (error) {
+                    console.error("Error showing tooltip:", error);
+                }
+            });
+        }
         
         // Handle mark for review button
-        markReviewButton.addEventListener('click', function() {
-            // Add current card to review list if not already there
-            if (!markedForReview.includes(currentCardIndex)) {
-                markedForReview.push(currentCardIndex);
-                
-                // Show feedback
-                this.classList.replace('btn-outline-warning', 'btn-warning');
-                this.innerHTML = '<i class="fas fa-check me-1"></i>Marked';
-                
-                // Disable button to prevent multiple clicks
-                this.disabled = true;
-            }
-        });
+        if (markReviewButton) {
+            bindEvent(markReviewButton, 'click', function() {
+                // Add current card to review list if not already there
+                if (!markedForReview.includes(currentCardIndex)) {
+                    markedForReview.push(currentCardIndex);
+                    
+                    // Show feedback
+                    this.classList.replace('btn-outline-warning', 'btn-warning');
+                    this.innerHTML = '<i class="fas fa-check me-1"></i>Marked';
+                    
+                    // Disable button to prevent multiple clicks
+                    this.disabled = true;
+                }
+            });
+        }
         
         // Handle typing mode check answer button
-        checkAnswerBtn.addEventListener('click', function() {
-            const userAnswer = typedAnswer.value.trim().toLowerCase();
-            const correctAnswer = cardsData[currentCardIndex].answer.toLowerCase();
-            
-            // Simple check - could be enhanced with fuzzy matching
-            const isCorrect = userAnswer === correctAnswer;
-            
-            // Show result
-            typingResult.classList.remove('d-none', 'alert-success', 'alert-danger');
-            if (isCorrect) {
-                typingResult.classList.add('alert-success');
-                typingResult.innerHTML = '<i class="fas fa-check-circle me-2"></i>Correct!';
-            } else {
-                typingResult.classList.add('alert-danger');
-                typingResult.innerHTML = `<i class="fas fa-times-circle me-2"></i>Incorrect. The correct answer is: <strong>${cardsData[currentCardIndex].answer}</strong>`;
-            }
-            
-            // Flip card to show answer
-            setTimeout(() => {
-                flipCard();
-            }, 1000);
-        });
+        if (checkAnswerBtn && typedAnswer) {
+            bindEvent(checkAnswerBtn, 'click', function() {
+                if (!cardsData || currentCardIndex >= cardsData.length) {
+                    return;
+                }
+                
+                const userAnswer = typedAnswer.value.trim().toLowerCase();
+                const correctAnswer = cardsData[currentCardIndex].answer.toLowerCase();
+                
+                // Simple check - could be enhanced with fuzzy matching
+                const isCorrect = userAnswer === correctAnswer;
+                
+                // Show result
+                if (typingResult) {
+                    typingResult.classList.remove('d-none', 'alert-success', 'alert-danger');
+                    if (isCorrect) {
+                        typingResult.classList.add('alert-success');
+                        typingResult.innerHTML = '<i class="fas fa-check-circle me-2"></i>Correct!';
+                    } else {
+                        typingResult.classList.add('alert-danger');
+                        typingResult.innerHTML = `<i class="fas fa-times-circle me-2"></i>Incorrect. The correct answer is: <strong>${cardsData[currentCardIndex].answer}</strong>`;
+                    }
+                }
+                
+                // Flip card to show answer
+                setTimeout(() => {
+                    flipCard();
+                }, 1000);
+            });
+        }
         
         // Handle expand stats button
-        expandStatsBtn.addEventListener('click', function() {
-            if (expandedStats.classList.contains('d-none')) {
-                expandedStats.classList.remove('d-none');
-                this.innerHTML = '<i class="fas fa-compress-alt me-1"></i>Hide Details';
-                generateDetailedStats();
-            } else {
-                expandedStats.classList.add('d-none');
-                this.innerHTML = '<i class="fas fa-chart-line me-1"></i>Detailed Stats';
-            }
-        });
+        if (expandStatsBtn && expandedStats) {
+            bindEvent(expandStatsBtn, 'click', function() {
+                if (expandedStats.classList.contains('d-none')) {
+                    expandedStats.classList.remove('d-none');
+                    this.innerHTML = '<i class="fas fa-compress-alt me-1"></i>Hide Details';
+                    generateDetailedStats();
+                } else {
+                    expandedStats.classList.add('d-none');
+                    this.innerHTML = '<i class="fas fa-chart-line me-1"></i>Detailed Stats';
+                }
+            });
+        }
         
         // Handle self-assessment buttons
         if (selfAssessment) {
-            selfAssessment.querySelectorAll('button').forEach(button => {
-                button.addEventListener('click', function() {
+            const confidenceButtons = selfAssessment.querySelectorAll('button');
+            confidenceButtons.forEach(button => {
+                bindEvent(button, 'click', function() {
                     const confidence = this.dataset.confidence;
                     // Hide self assessment
                     selfAssessment.classList.add('d-none');
@@ -929,71 +992,89 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Handle answer rating buttons
-        cardControls.querySelectorAll('button').forEach(button => {
-            button.addEventListener('click', function() {
-                const rating = parseInt(this.dataset.rating);
-                
-                // Update statistics
-                cardsStudied++;
-                
-                // Track performance by card status
-                const cardStatus = cardsData[currentCardIndex].card_status;
-                cardTypeStats[cardStatus].total++;
-                
-                if (rating >= 3) {
-                    correctAnswers++;
-                    cardTypeStats[cardStatus].correct++;
-                }
-                
-                // Record time taken
-                const endTime = Date.now();
-                const timeSpent = (endTime - startTime) / 1000;
-                cardTimes.push(timeSpent);
-                totalStudyTime += timeSpent;
-                
-                // Submit answer to server (include cram mode flag)
-                submitAnswer(cardsData[currentCardIndex].card_id, rating, studyMode === 'cram');
-                
-                // Show next card or end session
-                currentCardIndex++;
-                updateProgressBar();
-                
-                if (currentCardIndex < totalCards) {
-                    showNextCard();
-                } else {
-                    handleSessionCompletion();
-                }
-                
-                updateStats();
+        if (cardControls) {
+            const ratingButtons = cardControls.querySelectorAll('button');
+            ratingButtons.forEach(button => {
+                bindEvent(button, 'click', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    
+                    // Validate rating
+                    if (isNaN(rating) || rating < 1 || rating > 4) {
+                        console.error("Invalid rating value", rating);
+                        return;
+                    }
+                    
+                    // Update statistics
+                    cardsStudied++;
+                    
+                    // Track performance by card status
+                    if (cardsData && currentCardIndex < cardsData.length) {
+                        const cardStatus = cardsData[currentCardIndex].card_status;
+                        if (cardTypeStats[cardStatus]) {
+                            cardTypeStats[cardStatus].total++;
+                            
+                            if (rating >= 3) {
+                                correctAnswers++;
+                                cardTypeStats[cardStatus].correct++;
+                            }
+                        }
+                        
+                        // Record time taken
+                        const endTime = Date.now();
+                        const timeSpent = (endTime - startTime) / 1000;
+                        cardTimes.push(timeSpent);
+                        totalStudyTime += timeSpent;
+                        
+                        // Submit answer to server (include cram mode flag)
+                        submitAnswer(cardsData[currentCardIndex].card_id, rating, studyMode === 'cram');
+                        
+                        // Show next card or end session
+                        currentCardIndex++;
+                        updateProgressBar();
+                        
+                        if (currentCardIndex < totalCards) {
+                            showNextCard();
+                        } else {
+                            handleSessionCompletion();
+                        }
+                        
+                        updateStats();
+                    } else {
+                        console.error("Card data not available or index out of range");
+                    }
+                });
             });
-        });
+        }
         
         // Add keyboard shortcuts
         document.addEventListener('keydown', function(event) {
             // Space bar to flip card
-            if (event.code === 'Space' && !currentCard.classList.contains('d-none') && !currentCard.classList.contains('flipped')) {
+            if (event.code === 'Space' && currentCard && !currentCard.classList.contains('d-none') && !currentCard.classList.contains('flipped')) {
                 flipCard();
                 event.preventDefault();
             }
             
             // 1-4 keys for rating (when controls are visible)
-            if (!cardControls.classList.contains('d-none')) {
+            if (cardControls && !cardControls.classList.contains('d-none')) {
                 if (event.key >= '1' && event.key <= '4') {
                     const rating = parseInt(event.key);
                     // Trigger click on the corresponding button
-                    cardControls.querySelector(`button[data-rating="${rating}"]`).click();
-                    event.preventDefault();
+                    const ratingButton = cardControls.querySelector(`button[data-rating="${rating}"]`);
+                    if (ratingButton) {
+                        ratingButton.click();
+                        event.preventDefault();
+                    }
                 }
             }
             
             // 'H' key for hint
-            if (event.key === 'h' && !hintButton.classList.contains('d-none')) {
+            if (event.key === 'h' && hintButton && !hintButton.classList.contains('d-none')) {
                 hintButton.click();
                 event.preventDefault();
             }
             
             // 'M' key for marking review
-            if (event.key === 'm' && !markReviewButton.classList.contains('d-none')) {
+            if (event.key === 'm' && markReviewButton && !markReviewButton.classList.contains('d-none')) {
                 markReviewButton.click();
                 event.preventDefault();
             }
@@ -1001,33 +1082,48 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Function to flip the card
         function flipCard() {
+            if (!currentCard) return;
+            
             currentCard.classList.add('flipped');
             
             // Show appropriate controls based on study mode
-            if (enableTypingMode) {
+            if (enableTypingMode && typingMode) {
                 typingMode.classList.add('d-none');
             }
             
-            cardControls.classList.remove('d-none');
+            if (cardControls) {
+                cardControls.classList.remove('d-none');
+            }
         }
         
         // Function to show the next card
         function showNextCard() {
+            if (!currentCard || !cardFront || !cardBack || !cardsData || currentCardIndex >= cardsData.length) {
+                console.error("Cannot show next card: missing elements or invalid card index");
+                return;
+            }
+            
             // Reset card state
             currentCard.classList.remove('flipped');
-            cardControls.classList.add('d-none');
+            if (cardControls) {
+                cardControls.classList.add('d-none');
+            }
             
-            if (enableTypingMode) {
+            if (enableTypingMode && typingMode) {
                 typingMode.classList.remove('d-none');
-                typedAnswer.value = '';
-                typingResult.classList.add('d-none');
+                if (typedAnswer) typedAnswer.value = '';
+                if (typingResult) typingResult.classList.add('d-none');
             }
             
             // Reset hint and mark review buttons
             if (hintButton) {
-                const hintTooltip = bootstrap.Tooltip.getInstance(hintButton);
-                if (hintTooltip) {
-                    hintTooltip.dispose();
+                try {
+                    const hintTooltip = bootstrap.Tooltip.getInstance(hintButton);
+                    if (hintTooltip) {
+                        hintTooltip.dispose();
+                    }
+                } catch (error) {
+                    console.error("Error disposing tooltip:", error);
                 }
             }
             
@@ -1055,17 +1151,21 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             // Show card status badge
-            cardStatusBadge.textContent = card.card_status.charAt(0).toUpperCase() + card.card_status.slice(1);
-            cardStatusBadge.className = `badge ${card.card_status} d-inline-block`;
-            cardStatusBadge.classList.remove('d-none');
+            if (cardStatusBadge) {
+                cardStatusBadge.textContent = card.card_status.charAt(0).toUpperCase() + card.card_status.slice(1);
+                cardStatusBadge.className = `badge ${card.card_status} d-inline-block`;
+                cardStatusBadge.classList.remove('d-none');
+            }
             
             // Show self assessment if enabled
-            if (enableSelfAssessment) {
+            if (enableSelfAssessment && selfAssessment) {
                 selfAssessment.classList.remove('d-none');
             }
             
             // Update counter
-            currentCount.textContent = currentCardIndex + 1;
+            if (currentCount) {
+                currentCount.textContent = currentCardIndex + 1;
+            }
             
             // Start timer
             startTime = Date.now();
@@ -1076,6 +1176,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Format card text with basic HTML
         function formatCardText(text) {
+            if (!text) return "";
+            
             // Convert line breaks to <br> tags
             text = text.replace(/\n/g, '<br>');
             
@@ -1090,6 +1192,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update hint button visibility
         function updateHintButton() {
+            if (!hintButton) return;
+            
             if (enableHints) {
                 hintButton.classList.remove('d-none');
             } else {
@@ -1099,6 +1203,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Function to update progress bar
         function updateProgressBar() {
+            if (!progressBar) return;
+            
             const progress = Math.round((currentCardIndex / totalCards) * 100);
             progressBar.style.width = `${progress}%`;
             progressBar.setAttribute('aria-valuenow', progress);
@@ -1106,6 +1212,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Function to update timer
         function updateTimer() {
+            if (!studyTime) return;
+            
             const elapsedTime = Math.floor((Date.now() - sessionStartTime) / 1000);
             const minutes = Math.floor(elapsedTime / 60);
             const seconds = elapsedTime % 60;
@@ -1115,19 +1223,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Function to handle session completion
         function handleSessionCompletion() {
             clearInterval(timerInterval);
-            currentCard.classList.add('d-none');
-            cardControls.classList.add('d-none');
             
-            if (enableTypingMode) {
+            if (currentCard) currentCard.classList.add('d-none');
+            if (cardControls) cardControls.classList.add('d-none');
+            
+            if (enableTypingMode && typingMode) {
                 typingMode.classList.add('d-none');
             }
             
-            if (enableSelfAssessment) {
+            if (enableSelfAssessment && selfAssessment) {
                 selfAssessment.classList.add('d-none');
             }
             
-            hintButton.classList.add('d-none');
-            markReviewButton.classList.add('d-none');
+            if (hintButton) hintButton.classList.add('d-none');
+            if (markReviewButton) markReviewButton.classList.add('d-none');
             
             // Remove focus mode if enabled
             if (enableFocusMode) {
@@ -1141,30 +1250,34 @@ document.addEventListener('DOMContentLoaded', function() {
             // Customize completion message based on performance
             const accuracy = cardsStudied > 0 ? Math.round((correctAnswers / cardsStudied) * 100) : 0;
             
-            if (accuracy >= 90) {
-                completionMessageText.textContent = "Excellent work! Your recall accuracy is outstanding.";
-            } else if (accuracy >= 70) {
-                completionMessageText.textContent = "Great job! You're making solid progress with these cards.";
-            } else if (accuracy >= 50) {
-                completionMessageText.textContent = "Good effort! Keep practicing to improve your recall.";
-            } else {
-                completionMessageText.textContent = "Don't worry about the difficult cards. Each review makes them easier to remember!";
+            if (completionMessageText) {
+                if (accuracy >= 90) {
+                    completionMessageText.textContent = "Excellent work! Your recall accuracy is outstanding.";
+                } else if (accuracy >= 70) {
+                    completionMessageText.textContent = "Great job! You're making solid progress with these cards.";
+                } else if (accuracy >= 50) {
+                    completionMessageText.textContent = "Good effort! Keep practicing to improve your recall.";
+                } else {
+                    completionMessageText.textContent = "Don't worry about the difficult cards. Each review makes them easier to remember!";
+                }
             }
             
             // Check for achievements
-            if (accuracy >= 80 && cardsStudied >= 10) {
-                achievementAlert.classList.remove('d-none');
-                achievementText.textContent = "Achievement Unlocked: Master Memorizer - 80%+ accuracy on 10+ cards!";
-            } else if (cardsStudied >= 20) {
-                achievementAlert.classList.remove('d-none');
-                achievementText.textContent = "Achievement Unlocked: Study Marathon - Completed 20+ cards in one session!";
+            if (achievementAlert && achievementText) {
+                if (accuracy >= 80 && cardsStudied >= 10) {
+                    achievementAlert.classList.remove('d-none');
+                    achievementText.textContent = "Achievement Unlocked: Master Memorizer - 80%+ accuracy on 10+ cards!";
+                } else if (cardsStudied >= 20) {
+                    achievementAlert.classList.remove('d-none');
+                    achievementText.textContent = "Achievement Unlocked: Study Marathon - Completed 20+ cards in one session!";
+                }
             }
             
-            completionMessage.classList.remove('d-none');
-            studyStats.classList.remove('d-none');
+            if (completionMessage) completionMessage.classList.remove('d-none');
+            if (studyStats) studyStats.classList.remove('d-none');
             
             // Show cards marked for review if any
-            if (markedForReview.length > 0) {
+            if (reviewCardsSection && reviewCardsList && markedForReview.length > 0) {
                 reviewCardsSection.classList.remove('d-none');
                 
                 // Clear existing list
@@ -1172,164 +1285,207 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Add each marked card
                 markedForReview.forEach(index => {
-                    const card = cardsData[index];
-                    const listItem = document.createElement('li');
-                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    
-                    const content = document.createElement('div');
-                    content.innerHTML = `
-                        <div class="fw-bold">${formatCardText(card.question)}</div>
-                        <small>${card.deck_name}</small>
-                    `;
-                    
-                    const viewButton = document.createElement('button');
-                    viewButton.className = 'btn btn-sm btn-outline-primary ms-2';
-                    viewButton.innerHTML = '<i class="fas fa-eye"></i>';
-                    viewButton.setAttribute('data-bs-toggle', 'tooltip');
-                    viewButton.setAttribute('data-bs-placement', 'top');
-                    viewButton.setAttribute('title', card.answer);
-                    
-                    listItem.appendChild(content);
-                    listItem.appendChild(viewButton);
-                    reviewCardsList.appendChild(listItem);
-                    
-                    // Initialize tooltip
-                    new bootstrap.Tooltip(viewButton);
+                    if (index < cardsData.length) {
+                        const card = cardsData[index];
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        
+                        const content = document.createElement('div');
+                        content.innerHTML = `
+                            <div class="fw-bold">${formatCardText(card.question)}</div>
+                            <small>${card.deck_name}</small>
+                        `;
+                        
+                        const viewButton = document.createElement('button');
+                        viewButton.className = 'btn btn-sm btn-outline-primary ms-2';
+                        viewButton.innerHTML = '<i class="fas fa-eye"></i>';
+                        viewButton.setAttribute('data-bs-toggle', 'tooltip');
+                        viewButton.setAttribute('data-bs-placement', 'top');
+                        viewButton.setAttribute('title', card.answer);
+                        
+                        listItem.appendChild(content);
+                        listItem.appendChild(viewButton);
+                        reviewCardsList.appendChild(listItem);
+                        
+                        // Initialize tooltip
+                        try {
+                            new bootstrap.Tooltip(viewButton);
+                        } catch (error) {
+                            console.error("Error initializing tooltip:", error);
+                        }
+                    }
                 });
             }
         }
         
         // Function to update statistics
         function updateStats() {
-            statTotal.innerText = cardsStudied;
-            statCorrect.innerText = correctAnswers;
+            if (statTotal) statTotal.innerText = cardsStudied;
+            if (statCorrect) statCorrect.innerText = correctAnswers;
             
-            const accuracy = cardsStudied > 0 ? Math.round((correctAnswers / cardsStudied) * 100) : 0;
-            statAccuracy.innerText = `${accuracy}%`;
+            if (statAccuracy) {
+                const accuracy = cardsStudied > 0 ? Math.round((correctAnswers / cardsStudied) * 100) : 0;
+                statAccuracy.innerText = `${accuracy}%`;
+            }
             
-            const avgTime = cardsStudied > 0 ? Math.round(totalStudyTime / cardsStudied) : 0;
-            statTime.innerText = `${avgTime}s`;
+            if (statTime) {
+                const avgTime = cardsStudied > 0 ? Math.round(totalStudyTime / cardsStudied) : 0;
+                statTime.innerText = `${avgTime}s`;
+            }
         }
         
         // Function to generate detailed statistics charts
         function generateDetailedStats() {
-            // Create chart for card types
-            const ctxCardTypes = document.getElementById('card-types-chart').getContext('2d');
+            const ctxCardTypes = document.getElementById('card-types-chart');
+            const ctxTime = document.getElementById('time-distribution-chart');
             
-            new Chart(ctxCardTypes, {
-                type: 'bar',
-                data: {
-                    labels: ['New', 'Learning', 'Mastered'],
-                    datasets: [{
-                        label: 'Correct',
-                        data: [
-                            cardTypeStats.new.correct,
-                            cardTypeStats.learning.correct,
-                            cardTypeStats.mastered.correct
-                        ],
-                        backgroundColor: 'rgba(138, 163, 103, 0.7)',
-                        borderColor: 'rgba(138, 163, 103, 1)',
-                        borderWidth: 1
-                    }, {
-                        label: 'Incorrect',
-                        data: [
-                            cardTypeStats.new.total - cardTypeStats.new.correct,
-                            cardTypeStats.learning.total - cardTypeStats.learning.correct,
-                            cardTypeStats.mastered.total - cardTypeStats.mastered.correct
-                        ],
-                        backgroundColor: 'rgba(232, 48, 21, 0.7)',
-                        borderColor: 'rgba(232, 48, 21, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Cards'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Card Type'
-                            }
-                        }
+            if (!ctxCardTypes || !ctxTime) {
+                console.error("Chart canvas elements not found");
+                return;
+            }
+            
+            try {
+                // Create chart for card types
+                new Chart(ctxCardTypes.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['New', 'Learning', 'Mastered'],
+                        datasets: [{
+                            label: 'Correct',
+                            data: [
+                                cardTypeStats.new.correct,
+                                cardTypeStats.learning.correct,
+                                cardTypeStats.mastered.correct
+                            ],
+                            backgroundColor: 'rgba(138, 163, 103, 0.7)',
+                            borderColor: 'rgba(138, 163, 103, 1)',
+                            borderWidth: 1
+                        }, {
+                            label: 'Incorrect',
+                            data: [
+                                cardTypeStats.new.total - cardTypeStats.new.correct,
+                                cardTypeStats.learning.total - cardTypeStats.learning.correct,
+                                cardTypeStats.mastered.total - cardTypeStats.mastered.correct
+                            ],
+                            backgroundColor: 'rgba(232, 48, 21, 0.7)',
+                            borderColor: 'rgba(232, 48, 21, 1)',
+                            borderWidth: 1
+                        }]
                     },
-                    plugins: {
-                        legend: {
-                            position: 'top'
-                        }
-                    }
-                }
-            });
-            
-            // Create time distribution chart
-            const ctxTime = document.getElementById('time-distribution-chart').getContext('2d');
-            
-            // Group times into ranges (0-5s, 5-10s, 10-20s, etc.)
-            const timeRanges = [
-                '0-5s', '5-10s', '10-20s', '20-30s', '30s+'
-            ];
-            
-            const timeDistribution = [0, 0, 0, 0, 0];
-            
-            cardTimes.forEach(time => {
-                if (time <= 5) timeDistribution[0]++;
-                else if (time <= 10) timeDistribution[1]++;
-                else if (time <= 20) timeDistribution[2]++;
-                else if (time <= 30) timeDistribution[3]++;
-                else timeDistribution[4]++;
-            });
-            
-            new Chart(ctxTime, {
-                type: 'bar',
-                data: {
-                    labels: timeRanges,
-                    datasets: [{
-                        label: 'Cards',
-                        data: timeDistribution,
-                        backgroundColor: 'rgba(62, 74, 137, 0.7)',
-                        borderColor: 'rgba(62, 74, 137, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Cards'
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Cards'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Card Type'
+                                }
                             }
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Response Time'
+                        plugins: {
+                            legend: {
+                                position: 'top'
                             }
                         }
                     }
-                }
-            });
+                });
+                
+                // Group times into ranges (0-5s, 5-10s, 10-20s, etc.)
+                const timeRanges = [
+                    '0-5s', '5-10s', '10-20s', '20-30s', '30s+'
+                ];
+                
+                const timeDistribution = [0, 0, 0, 0, 0];
+                
+                cardTimes.forEach(time => {
+                    if (time <= 5) timeDistribution[0]++;
+                    else if (time <= 10) timeDistribution[1]++;
+                    else if (time <= 20) timeDistribution[2]++;
+                    else if (time <= 30) timeDistribution[3]++;
+                    else timeDistribution[4]++;
+                });
+                
+                // Create time distribution chart
+                new Chart(ctxTime.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: timeRanges,
+                        datasets: [{
+                            label: 'Cards',
+                            data: timeDistribution,
+                            backgroundColor: 'rgba(62, 74, 137, 0.7)',
+                            borderColor: 'rgba(62, 74, 137, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Cards'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Response Time'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error generating charts:", error);
+            }
         }
         
-        // Function to submit answer to server
+        // Function to submit answer to server with error handling
         function submitAnswer(cardId, rating, cramMode = false) {
+            if (!cardId || isNaN(cardId) || cardId <= 0) {
+                console.error("Invalid card ID for submission", cardId);
+                return;
+            }
+            
             // Create AJAX request
             const xhr = new XMLHttpRequest();
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    console.log("Response status:", xhr.status);
+                    console.log("Response text:", xhr.responseText);
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            console.log("Stats update success:", response.success);
+                        } catch (e) {
+                            console.error("Error parsing response:", e);
+                        }
+                    } else {
+                        console.error("Error submitting answer. Status:", xhr.status);
+                    }
+                }
+            };
+            
+            // Open connection and set headers
             xhr.open('POST', '<?php echo SITE_URL; ?>/study/submit_answer.php', true);
+            xhr.setHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             
             // Prepare data
             const data = `card_id=${cardId}&rating=${rating}&cram_mode=${cramMode ? 1 : 0}`;
+            console.log("Submitting answer:", data);
             
             // Send request
             xhr.send(data);
-            
-            // We're not waiting for the response as it's not critical for the UI
         }
     }
 });

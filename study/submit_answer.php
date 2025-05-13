@@ -137,7 +137,14 @@ $stmt = $conn->prepare("
         correct_answers = correct_answers + VALUES(correct_answers)
 ");
 $stmt->bind_param("iii", $_SESSION['user_id'], $deck_id, $correct);
-$stmt->execute();
+
+// Add error logging
+if (!$stmt->execute()) {
+    error_log("Error updating statistics: " . $stmt->error);
+}
+
+// Also log parameters for debugging
+error_log("Stats params - user_id: {$_SESSION['user_id']}, deck_id: {$deck_id}, correct: {$correct}");
 
 // Update user streak
 // Check if this is the first card studied today

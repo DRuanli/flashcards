@@ -25,6 +25,47 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- These tables need to be added to database.sql
+CREATE TABLE IF NOT EXISTS auth_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    selector VARCHAR(255) NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires DATETIME NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires DATETIME NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+    tag_id INT AUTO_INCREMENT PRIMARY KEY,
+    tag_name VARCHAR(50) NOT NULL,
+    tag_color VARCHAR(20) DEFAULT '#3E4A89'
+);
+
+CREATE TABLE IF NOT EXISTS deck_tags (
+    deck_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (deck_id, tag_id),
+    FOREIGN KEY (deck_id) REFERENCES decks(deck_id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS user_streaks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    streak_date DATE NOT NULL,
+    current_streak INT DEFAULT 1,
+    UNIQUE KEY (user_id, streak_date),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
 -- Decks table
 CREATE TABLE IF NOT EXISTS decks (
     deck_id INT AUTO_INCREMENT PRIMARY KEY,
