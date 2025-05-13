@@ -9,8 +9,12 @@ define('DB_NAME', 'flashcards');
 define('SITE_NAME', 'FlashLearn');
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 $host = $_SERVER['HTTP_HOST'];
-$path = dirname($_SERVER['SCRIPT_NAME']);
-define('SITE_URL', $protocol . $host . $path);
+
+// FIX: Get the base URL correctly, ensuring we don't duplicate folders
+$script_name = $_SERVER['SCRIPT_NAME'];
+$app_root = '/flashcards'; // Base application folder 
+$base_path = substr($script_name, 0, strpos($script_name, $app_root) + strlen($app_root));
+define('SITE_URL', $protocol . $host . $base_path);
 
 // Session configuration
 session_start();
@@ -35,5 +39,21 @@ function isLoggedIn() {
 function redirect($location) {
     header("Location: " . $location);
     exit();
+}
+
+// Generate CSRF token
+function generateCSRFToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// Verify CSRF token
+function verifyCSRFToken($token) {
+    if (!isset($_SESSION['csrf_token']) || $token !== $_SESSION['csrf_token']) {
+        return false;
+    }
+    return true;
 }
 ?>
