@@ -124,66 +124,77 @@ $conn->close();
 include_once 'includes/header.php';
 ?>
 
-<h1 class="mb-4">Your Progress</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chart-line me-2"></i>Your Progress</h1>
+</div>
 
 <div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body">
-                <h5 class="card-title">Study Streak</h5>
-                <p class="card-text display-4"><?php echo $current_streak; ?></p>
-                <p class="text-muted">consecutive days</p>
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-4">
+                <i class="fas fa-fire stat-icon"></i>
+                <h5 class="card-title text-muted mb-2">Study Streak</h5>
+                <p class="card-text display-4 mb-1"><?php echo $current_streak; ?></p>
+                <p class="text-muted"><small>consecutive days</small></p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body">
-                <h5 class="card-title">Cards Studied</h5>
-                <p class="card-text display-4"><?php echo $overall_stats['total_cards_studied'] ?? 0; ?></p>
-                <p class="text-muted">total reviews</p>
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-4">
+                <i class="fas fa-clone stat-icon"></i>
+                <h5 class="card-title text-muted mb-2">Cards Studied</h5>
+                <p class="card-text display-4 mb-1"><?php echo $overall_stats['total_cards_studied'] ?? 0; ?></p>
+                <p class="text-muted"><small>total reviews</small></p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body">
-                <h5 class="card-title">Correct Answers</h5>
-                <p class="card-text display-4"><?php echo $overall_stats['total_correct'] ?? 0; ?></p>
-                <p class="text-muted">cards remembered</p>
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-4">
+                <i class="fas fa-check-circle stat-icon"></i>
+                <h5 class="card-title text-muted mb-2">Correct Answers</h5>
+                <p class="card-text display-4 mb-1"><?php echo $overall_stats['total_correct'] ?? 0; ?></p>
+                <p class="text-muted"><small>cards remembered</small></p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body">
-                <h5 class="card-title">Accuracy</h5>
-                <p class="card-text display-4"><?php echo $overall_stats['overall_accuracy'] ?? 0; ?>%</p>
-                <p class="text-muted">overall performance</p>
+    <div class="col-md-3 col-sm-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-4">
+                <i class="fas fa-percentage stat-icon"></i>
+                <h5 class="card-title text-muted mb-2">Accuracy</h5>
+                <p class="card-text display-4 mb-1"><?php echo $overall_stats['overall_accuracy'] ?? 0; ?>%</p>
+                <p class="text-muted"><small>overall performance</small></p>
             </div>
         </div>
     </div>
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-8">
-        <div class="card">
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
             <div class="card-header">
-                <h5>Study Activity (Last 30 Days)</h5>
+                <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>Study Activity (Last 30 Days)</h5>
             </div>
             <div class="card-body">
                 <?php if (empty($daily_stats)): ?>
-                    <p class="text-center">No study activity in the last 30 days</p>
+                    <div class="text-center py-5">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 24 24' fill='none' stroke='%233E4A89' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='4' y1='21' x2='4' y2='14'/%3E%3Cline x1='8' y1='21' x2='8' y2='12'/%3E%3Cline x1='12' y1='21' x2='12' y2='8'/%3E%3Cline x1='16' y1='21' x2='16' y2='16'/%3E%3Cline x1='20' y1='21' x2='20' y2='10'/%3E%3C/svg%3E" 
+                             alt="No activity" style="width: 80px; height: 80px; opacity: 0.5;" class="mb-3">
+                        <p class="text-muted">No study activity in the last 30 days</p>
+                        <a href="<?php echo SITE_URL; ?>/study/index.php" class="btn btn-primary">Start Studying Now</a>
+                    </div>
                 <?php else: ?>
-                    <canvas id="dailyActivityChart" width="400" height="200"></canvas>
+                    <canvas id="dailyActivityChart" height="250"></canvas>
                 <?php endif; ?>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
             <div class="card-header">
-                <h5>Study Calendar</h5>
+                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Study Calendar</h5>
             </div>
             <div class="card-body">
                 <div id="study-calendar"></div>
@@ -194,14 +205,19 @@ include_once 'includes/header.php';
 
 <div class="card mb-4">
     <div class="card-header">
-        <h5>Deck Performance</h5>
+        <h5 class="mb-0"><i class="fas fa-book me-2"></i>Deck Performance</h5>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         <?php if (empty($deck_stats)): ?>
-            <p class="text-center">No deck statistics available</p>
+            <div class="text-center py-5">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 24 24' fill='none' stroke='%233E4A89' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3C/svg%3E" 
+                     alt="No decks" style="width: 80px; height: 80px; opacity: 0.5;" class="mb-3">
+                <p class="text-muted">No deck statistics available</p>
+                <a href="<?php echo SITE_URL; ?>/decks/create.php" class="btn btn-primary">Create Your First Deck</a>
+            </div>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <th>Deck</th>
@@ -216,11 +232,17 @@ include_once 'includes/header.php';
                     <tbody>
                         <?php foreach ($deck_stats as $deck): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($deck['deck_name']); ?></td>
+                                <td>
+                                    <a href="<?php echo SITE_URL; ?>/cards/list.php?deck_id=<?php echo $deck['deck_id']; ?>" class="text-decoration-none">
+                                        <i class="fas fa-book me-2"></i><?php echo htmlspecialchars($deck['deck_name']); ?>
+                                    </a>
+                                </td>
                                 <td><?php echo $deck['total_cards']; ?></td>
                                 <td>
                                     <?php if ($deck['due_cards'] > 0): ?>
-                                        <span class="badge bg-danger"><?php echo $deck['due_cards']; ?></span>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-circle me-1"></i><?php echo $deck['due_cards']; ?>
+                                        </span>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">0</span>
                                     <?php endif; ?>
@@ -228,7 +250,7 @@ include_once 'includes/header.php';
                                 <td><?php echo $deck['cards_studied']; ?></td>
                                 <td><?php echo $deck['correct_answers']; ?></td>
                                 <td>
-                                    <div class="progress">
+                                    <div class="progress" style="height: 8px; width: 100px;">
                                         <div 
                                             class="progress-bar 
                                                 <?php 
@@ -239,13 +261,17 @@ include_once 'includes/header.php';
                                                 ?>"
                                             role="progressbar" 
                                             style="width: <?php echo $deck['accuracy']; ?>%;"
-                                        >
-                                            <?php echo $deck['accuracy']; ?>%
-                                        </div>
+                                            aria-valuenow="<?php echo $deck['accuracy']; ?>"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"
+                                        ></div>
                                     </div>
+                                    <small><?php echo $deck['accuracy']; ?>%</small>
                                 </td>
                                 <td>
-                                    <a href="<?php echo SITE_URL; ?>/study/index.php?deck_id=<?php echo $deck['deck_id']; ?>" class="btn btn-sm btn-success">Study</a>
+                                    <a href="<?php echo SITE_URL; ?>/study/index.php?deck_id=<?php echo $deck['deck_id']; ?>" class="btn btn-sm btn-success">
+                                        <i class="fas fa-graduation-cap"></i>
+                                    </a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -262,6 +288,15 @@ include_once 'includes/header.php';
 <?php if (!empty($daily_stats)): ?>
 document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('dailyActivityChart').getContext('2d');
+    
+    // Create gradient for line chart
+    const blueGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    blueGradient.addColorStop(0, 'rgba(62, 74, 137, 0.8)');
+    blueGradient.addColorStop(1, 'rgba(62, 74, 137, 0.2)');
+    
+    const pinkGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    pinkGradient.addColorStop(0, 'rgba(255, 183, 197, 0.8)');
+    pinkGradient.addColorStop(1, 'rgba(255, 183, 197, 0.2)');
     
     // Prepare data for chart
     const labels = [
@@ -296,35 +331,85 @@ document.addEventListener('DOMContentLoaded', function() {
                 {
                     label: 'Cards Studied',
                     data: studiedData,
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: blueGradient,
+                    borderColor: 'rgba(62, 74, 137, 1)',
                     borderWidth: 1,
-                    yAxisID: 'y'
+                    borderRadius: 4,
+                    yAxisID: 'y',
+                    barPercentage: 0.5,
+                    categoryPercentage: 0.7
                 },
                 {
                     label: 'Accuracy (%)',
                     data: accuracyData,
                     type: 'line',
                     fill: false,
-                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 183, 197, 0.7)',
+                    borderColor: 'rgba(255, 183, 197, 1)',
                     borderWidth: 2,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(255, 183, 197, 1)',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     yAxisID: 'y1'
                 }
             ]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#333',
+                    bodyColor: '#666',
+                    borderColor: '#e0e0e0',
+                    borderWidth: 1,
+                    padding: 10,
+                    caretPadding: 5,
+                    cornerRadius: 4,
+                    titleFont: {
+                        family: "'Noto Sans JP', sans-serif",
+                        size: 13
+                    },
+                    bodyFont: {
+                        family: "'Noto Sans JP', sans-serif",
+                        size: 12
+                    },
+                    boxWidth: 10
+                }
+            },
             scales: {
                 y: {
                     type: 'linear',
                     position: 'left',
                     beginAtZero: true,
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.1)',
+                        drawBorder: false
+                    },
                     title: {
                         display: true,
-                        text: 'Cards Studied'
+                        text: 'Cards Studied',
+                        font: {
+                            family: "'Noto Sans JP', sans-serif",
+                            size: 12
+                        }
                     },
                     ticks: {
-                        precision: 0
+                        precision: 0,
+                        font: {
+                            family: "'Noto Sans JP', sans-serif",
+                            size: 11
+                        }
                     }
                 },
                 y1: {
@@ -332,17 +417,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     position: 'right',
                     beginAtZero: true,
                     max: 100,
-                    title: {
-                        display: true,
-                        text: 'Accuracy (%)'
-                    },
                     grid: {
                         drawOnChartArea: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Accuracy (%)',
+                        font: {
+                            family: "'Noto Sans JP', sans-serif",
+                            size: 12
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            family: "'Noto Sans JP', sans-serif",
+                            size: 11
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            family: "'Noto Sans JP', sans-serif",
+                            size: 11
+                        }
                     }
                 }
-            },
-            responsive: true,
-            maintainAspectRatio: false
+            }
         }
     });
     
@@ -375,12 +479,14 @@ function renderCalendar(studyDates) {
     // Create day labels
     const dayLabels = document.createElement('div');
     dayLabels.className = 'row text-center mb-2';
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
     
     days.forEach(day => {
         const dayEl = document.createElement('div');
-        dayEl.className = 'col';
+        dayEl.className = 'col px-1';
         dayEl.textContent = day;
+        dayEl.style.fontSize = '0.8rem';
+        dayEl.style.fontWeight = '500';
         dayLabels.appendChild(dayEl);
     });
     
@@ -402,31 +508,32 @@ function renderCalendar(studyDates) {
         for (let j = 0; j < 7; j++) {
             // Add empty cells for days before start of month
             if (i === 0 && j < firstDay) {
-                calendarHtml += '<div class="col"></div>';
+                calendarHtml += '<div class="col px-1"></div>';
             } 
             // Add days of month
             else if (dayCount <= daysInMonth) {
                 const date = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${dayCount.toString().padStart(2, '0')}`;
                 const isStudyDay = studyDates.includes(date);
-                const isToday = dayCount === currentDate.getDate();
+                const isToday = dayCount === currentDate.getDate() && currentMonth === currentDate.getMonth() && currentYear === currentDate.getFullYear();
                 
-                let cellClass = 'col text-center';
-                let dayHtml = '';
+                let dayHtml;
                 
-                if (isStudyDay) {
-                    dayHtml = `<span class="badge rounded-pill bg-success">${dayCount}</span>`;
+                if (isStudyDay && isToday) {
+                    dayHtml = `<div class="calendar-day today studied">${dayCount}</div>`;
+                } else if (isStudyDay) {
+                    dayHtml = `<div class="calendar-day studied">${dayCount}</div>`;
                 } else if (isToday) {
-                    dayHtml = `<span class="badge rounded-pill bg-primary">${dayCount}</span>`;
+                    dayHtml = `<div class="calendar-day today">${dayCount}</div>`;
                 } else {
-                    dayHtml = dayCount;
+                    dayHtml = `<div class="calendar-day">${dayCount}</div>`;
                 }
                 
-                calendarHtml += `<div class="${cellClass}">${dayHtml}</div>`;
+                calendarHtml += `<div class="col px-1 text-center">${dayHtml}</div>`;
                 dayCount++;
             } 
             // Add empty cells for days after end of month
             else {
-                calendarHtml += '<div class="col"></div>';
+                calendarHtml += '<div class="col px-1"></div>';
             }
         }
         
@@ -438,7 +545,38 @@ function renderCalendar(studyDates) {
         }
     }
     
-    calendarEl.innerHTML += calendarHtml;
+    const calendarDays = document.createElement('div');
+    calendarDays.innerHTML = calendarHtml;
+    calendarEl.appendChild(calendarDays);
+    
+    // Add styles for calendar days
+    const style = document.createElement('style');
+    style.textContent = `
+        .calendar-day {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            margin: 0 auto;
+            transition: all 0.2s ease;
+        }
+        .calendar-day.today {
+            background-color: var(--indigo);
+            color: white;
+        }
+        .calendar-day.studied:not(.today) {
+            background-color: var(--matcha-light);
+            color: var(--kuro);
+        }
+        .calendar-day.today.studied {
+            background: linear-gradient(135deg, var(--indigo) 50%, var(--matcha) 50%);
+            color: white;
+        }
+    `;
+    document.head.appendChild(style);
 }
 <?php endif; ?>
 </script>

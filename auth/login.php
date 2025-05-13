@@ -65,21 +65,28 @@ include_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-6 col-lg-5">
+        <div class="text-center mb-5">
+            <h1 class="mb-4">
+                <span class="logo-accent" style="font-size: 1.5rem;">暗記</span>FlashLearn
+            </h1>
+            <p class="text-muted">Master knowledge through spaced repetition</p>
+        </div>
+        
+        <div class="card login-card">
             <div class="card-header">
-                <h2 class="text-center">Login</h2>
+                <h2 class="text-center mb-0">Login</h2>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <?php if (!empty($flash_message)): ?>
                     <div class="alert alert-success">
-                        <?php echo $flash_message; ?>
+                        <i class="fas fa-check-circle me-2"></i><?php echo $flash_message; ?>
                     </div>
                 <?php endif; ?>
                 
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
-                        <ul class="mb-0">
+                        <ul class="mb-0 ps-3">
                             <?php foreach ($errors as $error): ?>
                                 <li><?php echo $error; ?></li>
                             <?php endforeach; ?>
@@ -89,20 +96,28 @@ include_once dirname(__DIR__) . '/includes/header.php';
                 
                 <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-2"></i>Username
+                        </label>
                         <input type="text" class="form-control" id="username" name="username" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-2"></i>Password
+                        </label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Login</button>
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Don't have an account? <a href="<?php echo SITE_URL; ?>/auth/register.php" class="fw-bold">Register</a>
+                        </small>
                     </div>
                 </form>
-            </div>
-            <div class="card-footer text-center">
-                Don't have an account? <a href="<?php echo SITE_URL; ?>/auth/register.php">Register</a>
             </div>
         </div>
     </div>

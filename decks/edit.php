@@ -57,16 +57,23 @@ $conn->close();
 include_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="<?php echo SITE_URL; ?>/decks/list.php"><i class="fas fa-layer-group me-1"></i>My Decks</a></li>
+        <li class="breadcrumb-item active">Edit Deck</li>
+    </ol>
+</nav>
+
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h2>Edit Deck</h2>
+                <h2 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Deck</h2>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
-                        <ul class="mb-0">
+                        <ul class="mb-0 ps-3">
                             <?php foreach ($errors as $error): ?>
                                 <li><?php echo $error; ?></li>
                             <?php endforeach; ?>
@@ -79,13 +86,17 @@ include_once dirname(__DIR__) . '/includes/header.php';
                         <label for="deck_name" class="form-label">Deck Name</label>
                         <input type="text" class="form-control" id="deck_name" name="deck_name" value="<?php echo htmlspecialchars($deck['deck_name']); ?>" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label for="description" class="form-label">Description (Optional)</label>
                         <textarea class="form-control" id="description" name="description" rows="3"><?php echo htmlspecialchars($deck['description']); ?></textarea>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <a href="<?php echo SITE_URL; ?>/decks/list.php" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Update Deck</button>
+                        <a href="<?php echo SITE_URL; ?>/decks/list.php" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Deck
+                        </button>
                     </div>
                 </form>
             </div>

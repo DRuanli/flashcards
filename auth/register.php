@@ -69,15 +69,22 @@ include_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-6 col-lg-5">
+        <div class="text-center mb-5">
+            <h1 class="mb-4">
+                <span class="logo-accent" style="font-size: 1.5rem;">暗記</span>FlashLearn
+            </h1>
+            <p class="text-muted">Create an account to start learning</p>
+        </div>
+        
+        <div class="card register-card">
             <div class="card-header">
-                <h2 class="text-center">Register</h2>
+                <h2 class="text-center mb-0">Register</h2>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
-                        <ul class="mb-0">
+                        <ul class="mb-0 ps-3">
                             <?php foreach ($errors as $error): ?>
                                 <li><?php echo $error; ?></li>
                             <?php endforeach; ?>
@@ -87,28 +94,41 @@ include_once dirname(__DIR__) . '/includes/header.php';
                 
                 <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-2"></i>Username
+                        </label>
                         <input type="text" class="form-control" id="username" name="username" required>
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope me-2"></i>Email
+                        </label>
                         <input type="email" class="form-control" id="email" name="email" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-2"></i>Password
+                        </label>
                         <input type="password" class="form-control" id="password" name="password" required>
+                        <small class="form-text text-muted">Password must be at least 6 characters</small>
                     </div>
-                    <div class="mb-3">
-                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                    <div class="mb-4">
+                        <label for="confirm_password" class="form-label">
+                            <i class="fas fa-lock me-2"></i>Confirm Password
+                        </label>
                         <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Register</button>
+                    <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Already have an account? <a href="<?php echo SITE_URL; ?>/auth/login.php" class="fw-bold">Login</a>
+                        </small>
                     </div>
                 </form>
-            </div>
-            <div class="card-footer text-center">
-                Already have an account? <a href="<?php echo SITE_URL; ?>/auth/login.php">Login</a>
             </div>
         </div>
     </div>

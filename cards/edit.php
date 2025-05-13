@@ -70,7 +70,7 @@ include_once dirname(__DIR__) . '/includes/header.php';
 
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="<?php echo SITE_URL; ?>/decks/list.php">My Decks</a></li>
+        <li class="breadcrumb-item"><a href="<?php echo SITE_URL; ?>/decks/list.php"><i class="fas fa-layer-group me-1"></i>My Decks</a></li>
         <li class="breadcrumb-item"><a href="<?php echo SITE_URL; ?>/cards/list.php?deck_id=<?php echo $deck_id; ?>"><?php echo htmlspecialchars($card['deck_name']); ?></a></li>
         <li class="breadcrumb-item active">Edit Card</li>
     </ol>
@@ -78,14 +78,14 @@ include_once dirname(__DIR__) . '/includes/header.php';
 
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header">
-                <h2>Edit Card in "<?php echo htmlspecialchars($card['deck_name']); ?>"</h2>
+                <h2 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Card</h2>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
-                        <ul class="mb-0">
+                        <ul class="mb-0 ps-3">
                             <?php foreach ($errors as $error): ?>
                                 <li><?php echo $error; ?></li>
                             <?php endforeach; ?>
@@ -98,35 +98,41 @@ include_once dirname(__DIR__) . '/includes/header.php';
                         <label for="question" class="form-label">Question / Front Side</label>
                         <textarea class="form-control" id="question" name="question" rows="3" required><?php echo htmlspecialchars($card['question']); ?></textarea>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label for="answer" class="form-label">Answer / Back Side</label>
                         <textarea class="form-control" id="answer" name="answer" rows="3" required><?php echo htmlspecialchars($card['answer']); ?></textarea>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <a href="<?php echo SITE_URL; ?>/cards/list.php?deck_id=<?php echo $deck_id; ?>" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Update Card</button>
+                        <a href="<?php echo SITE_URL; ?>/cards/list.php?deck_id=<?php echo $deck_id; ?>" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Card
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Card Preview -->
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8">
-        <h3 class="text-center mb-3">Card Preview</h3>
-        <div class="card-container">
-            <div class="flashcard">
-                <div class="flashcard-front" id="preview-front">
-                    <p class="fs-4"><?php echo htmlspecialchars($card['question']); ?></p>
+        <!-- Card Preview -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-eye me-2"></i>Card Preview</h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="card-container">
+                    <div class="flashcard">
+                        <div class="flashcard-front" id="preview-front">
+                            <p class="fs-4"><?php echo htmlspecialchars($card['question']); ?></p>
+                        </div>
+                        <div class="flashcard-back" id="preview-back">
+                            <p class="fs-4"><?php echo htmlspecialchars($card['answer']); ?></p>
+                        </div>
+                    </div>
                 </div>
-                <div class="flashcard-back" id="preview-back">
-                    <p class="fs-4"><?php echo htmlspecialchars($card['answer']); ?></p>
-                </div>
+                <p class="text-center text-muted mt-3"><small><i class="fas fa-hand-point-up me-1"></i>Click the card to flip it</small></p>
             </div>
         </div>
-        <p class="text-center text-muted"><small>Click the card to flip it</small></p>
     </div>
 </div>
 
