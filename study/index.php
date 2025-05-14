@@ -1459,9 +1459,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
-                    console.log("Response status:", xhr.status);
-                    console.log("Response text:", xhr.responseText);
-                    
                     if (xhr.status === 200) {
                         try {
                             const response = JSON.parse(xhr.responseText);
@@ -1476,13 +1473,12 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             // Open connection and set headers
-            xhr.open('POST', '<?php echo SITE_URL; ?>/study/submit_answer.php', true);
-            xhr.setHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.open('POST', 'submit_answer.php', true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             
             // Prepare data
             const data = `card_id=${cardId}&rating=${rating}&cram_mode=${cramMode ? 1 : 0}`;
-            console.log("Submitting answer:", data);
             
             // Send request
             xhr.send(data);
